@@ -1,131 +1,101 @@
-chrome.storage.sync.get("quality", function (data) {
-    const preferredQuality = data.quality || "1080p"; // ✅ 기본값을 1080p로 변경
-    console.log("✅ 사용자가 설정한 화질:", preferredQuality);
-
+chrome.storage.sync.get("quality", ({ quality }) => {
+    const preferredQuality = quality || "1080p";
+  
+    // 광고 차단 관련 팝업만 제거
     function removeAdsPopup() {
-        let popup = document.querySelector(".popup_container__Aqx-3");
-        if (popup) {
-            console.log("🚨 광고 차단 감지 팝업 발견! 즉시 제거");
-            const popupText = popup.innerText || "";
-            if (popupText.includes("광고 차단")) {
-                popup.style.display = "none";
-            }
-        }
+      const popup = document.querySelector(".popup_container__Aqx-3");
+      if (popup && popup.innerText.includes("광고 차단")) {
+        popup.style.display = "none";
+      }
     }
-
+  
+    // 설정된 화질로 변경 시도 (최대 10회 재시도)
     function changeQuality(attempts = 10) {
-        console.log(`🔄 화질 변경 시도... 남은 재시도 횟수: ${attempts}`);
-
-        let qualityButtons = document.querySelectorAll("li.pzp-ui-setting-quality-item");
-
-        if (!qualityButtons.length) {
-            if (attempts > 0) {
-                setTimeout(() => changeQuality(attempts - 1), 1000);
-            }
-            return;
+      const buttons = document.querySelectorAll("li.pzp-ui-setting-quality-item");
+      if (!buttons.length) {
+        if (attempts > 0) setTimeout(() => changeQuality(attempts - 1), 1000);
+        return;
+      }
+      buttons.forEach(btn => {
+        const text = btn.innerText.trim();
+        if (text.includes(preferredQuality)) {
+          btn.click();
+          setTimeout(() => {
+            btn.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+          }, 500);
         }
-
-        let found = false;
-        qualityButtons.forEach(button => {
-            let qualityText = button.innerText.trim();
-            if (qualityText.includes(preferredQuality)) {
-                console.log(`✅ ${preferredQuality} 클릭 시도...`);
-                button.click();
-
-                setTimeout(() => {
-                    button.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
-                    console.log(`🎯 ${preferredQuality} 적용을 위해 Enter 키 이벤트 발생!`);
-                }, 500);
-
-                found = true;
-            }
-        });
-
-        if (!found) console.log("❌ 원하는 화질 옵션을 찾을 수 없음.");
+      });
     }
-
-    function waitForQualityChange() {
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                const currentQuality = document.querySelector("li.pzp-ui-setting-quality-item.pzp-ui-setting-pane-item-selected")?.innerText;
-                if (currentQuality && currentQuality.includes("360p")) {
-                    console.log("🚨 자동 360p 감지됨! 즉시 변경...");
-                    setTimeout(changeQuality, 1000);
-                }
-            });
-        });
-
-        setTimeout(() => {
-            const targetNode = document.querySelector("li.pzp-ui-setting-quality-item");
-            if (targetNode) {
-                observer.observe(targetNode, { childList: true, subtree: true });
-                console.log("🔄 화질 변경 감시 활성화됨");
-            }
-        }, 1000);
+  
+    // 자동 360p 설정 감지 시 화질 변경
+    function watchAuto360p() {
+      const observer = new MutationObserver(() => {
+        const current = document.querySelector("li.pzp-ui-setting-quality-item.pzp-ui-setting-pane-item-selected")?.innerText;
+        if (current?.includes("360p")) setTimeout(changeQuality, 1000);
+      });
+      setTimeout(() => {
+        const target = document.querySelector("li.pzp-ui-setting-quality-item");
+        if (target) observer.observe(target, { childList: true, subtree: true });
+      }, 1000);
     }
-
-    function detectPageChange() {
-        let lastUrl = location.href;
-        new MutationObserver(() => {
-            if (location.href !== lastUrl) {
-                console.log("🔄 방송 변경 감지! 팝업 제거 & 화질 즉시 설정...");
-                lastUrl = location.href;
-                setTimeout(() => {
-                    removeAdsPopup();
-                    changeQuality();
-                }, 500);
-            }
-        }).observe(document.body, { childList: true, subtree: true });
+  
+    // URL 변경 감지 시 팝업 제거 + 화질 재설정
+    function onPageChange() {
+      let lastUrl = location.href;
+      new MutationObserver(() => {
+        if (location.href !== lastUrl) {
+          lastUrl = location.href;
+          setTimeout(() => {
+            removeAdsPopup();
+            changeQuality();
+          }, 500);
+        }
+      }).observe(document.body, { childList: true, subtree: true });
     }
-
-    // ✅ 즉시 실행 (사이트 처음 진입 시)
-    removeAdsPopup();
-
-    // ✅ 최초 진입 시 버튼 로딩 기다리면서 10번까지 반복 시도
-    setTimeout(() => changeQuality(10), 500);
-
-    // ✅ 방송 변경 시 팝업 제거 + 화질 변경 감지
-    waitForQualityChange();
-    detectPageChange();
-
-    // ✅ MutationObserver로 팝업 감지 (필요할 때만 실행)
-    new MutationObserver(() => removeAdsPopup()).observe(document.body, { childList: true, subtree: true });
-});
-function enableScroll() {
-    const html = document.documentElement;
-    const body = document.body;
-
-    if (body.style.overflow === 'hidden' || html.style.overflow === 'hidden') {
+  
+    // overflow: hidden이 강제로 적용되는 경우 복구
+    function enableScroll() {
+      const html = document.documentElement;
+      const body = document.body;
+      if (body.style.overflow === 'hidden' || html.style.overflow === 'hidden') {
         body.style.overflow = 'auto';
         html.style.overflow = 'auto';
+      }
     }
-}
-// ✅ 스크롤이 막힐 때마다 자동으로 overflow 복구
-new MutationObserver(() => enableScroll()).observe(document.body, {
-    attributes: true,
-    attributeFilter: ['style'],
-    subtree: true
-});
-// ✅ 추가: 아예 강제 스타일 덮어쓰기
-function forceEnableScroll() {
-    const style = document.createElement('style');
-    style.innerHTML = `
+  
+    new MutationObserver(() => enableScroll()).observe(document.body, {
+      attributes: true,
+      attributeFilter: ['style'],
+      subtree: true
+    });
+  
+    // 스크롤 차단을 막기 위해 스타일 강제 삽입
+    function forceEnableScroll() {
+      const style = document.createElement('style');
+      style.innerHTML = `
         html, body {
-            overflow: auto !important;
-            position: static !important;
-            height: auto !important;
+          overflow: auto !important;
+          position: static !important;
+          height: auto !important;
         }
-
         * {
-            overscroll-behavior: auto !important;
-            scroll-behavior: auto !important;
+          overscroll-behavior: auto !important;
+          scroll-behavior: auto !important;
         }
-
         ::-webkit-scrollbar {
-            display: initial !important;
+          display: initial !important;
         }
-    `;
-    document.head.appendChild(style);
-}
-
-forceEnableScroll();
+      `;
+      document.head.appendChild(style);
+    }
+  
+    // 초기 실행: 팝업 제거, 화질 설정, 감시 시작
+    removeAdsPopup();
+    changeQuality();
+    watchAuto360p();
+    onPageChange();
+    forceEnableScroll();
+  
+    // 팝업이 나중에 뜨는 경우를 대비한 감시자 추가
+    new MutationObserver(() => removeAdsPopup()).observe(document.body, { childList: true, subtree: true });
+  });
