@@ -6,7 +6,10 @@ chrome.storage.sync.get("quality", function (data) {
         let popup = document.querySelector(".popup_container__Aqx-3");
         if (popup) {
             console.log("🚨 광고 차단 감지 팝업 발견! 즉시 제거");
-            popup.remove();
+            const popupText = popup.innerText || "";
+            if (popupText.includes("광고 차단")) {
+                popup.style.display = "none";
+            }
         }
     }
 
@@ -88,3 +91,41 @@ chrome.storage.sync.get("quality", function (data) {
     // ✅ MutationObserver로 팝업 감지 (필요할 때만 실행)
     new MutationObserver(() => removeAdsPopup()).observe(document.body, { childList: true, subtree: true });
 });
+function enableScroll() {
+    const html = document.documentElement;
+    const body = document.body;
+
+    if (body.style.overflow === 'hidden' || html.style.overflow === 'hidden') {
+        body.style.overflow = 'auto';
+        html.style.overflow = 'auto';
+    }
+}
+// ✅ 스크롤이 막힐 때마다 자동으로 overflow 복구
+new MutationObserver(() => enableScroll()).observe(document.body, {
+    attributes: true,
+    attributeFilter: ['style'],
+    subtree: true
+});
+// ✅ 추가: 아예 강제 스타일 덮어쓰기
+function forceEnableScroll() {
+    const style = document.createElement('style');
+    style.innerHTML = `
+        html, body {
+            overflow: auto !important;
+            position: static !important;
+            height: auto !important;
+        }
+
+        * {
+            overscroll-behavior: auto !important;
+            scroll-behavior: auto !important;
+        }
+
+        ::-webkit-scrollbar {
+            display: initial !important;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+forceEnableScroll();
