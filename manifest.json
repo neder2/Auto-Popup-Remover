@@ -1,0 +1,31 @@
+{
+    "manifest_version": 3,
+    "name": "Chzzk Auto Quality",
+    "version": "1.2",
+    "description": "치지직(Chzzk) 스트리밍 화질을 광고 차단 사용 시에도 자동으로 변경하는 확장 프로그램",
+    "permissions": ["storage"],
+    "host_permissions": [
+      "https://chzzk.naver.com/*",
+      "https://apis.naver.com/*",
+      "https://ssl.pstatic.net/*"
+    ],
+    "background": {
+      "service_worker": "background.js"
+    },
+    "content_scripts": [
+      {
+        "matches": ["https://chzzk.naver.com/*"],
+        "js": ["content.js"]
+      }
+    ],
+    "action": {
+      "default_popup": "options.html",
+      "default_icon": {
+        "16": "icons/icon16.png",
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
+      }
+    },
+    "options_page": "options.html"
+  }
+  

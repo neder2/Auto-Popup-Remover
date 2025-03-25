@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chzzk 화질 설정</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h2>Chzzk 화질 자동 설정</h2>
+    <label for="quality">선호 화질:</label>
+    <select id="quality">
+        <option value="1080p">1080p</option>
+        <option value="720p">720p</option>
+        <option value="480p">480p</option>
+    </select>
+    <button id="save">저장</button>
+    <span id="notice">(새로고침 시 작동)</span> <!-- 추가된 텍스트 -->
+    <p id="message" class="hidden">✅ 설정이 변경되었습니다!</p> <!-- 변경 완료 메시지 -->
+
+    <script src="options.js"></script>
+</body>
+</html>
